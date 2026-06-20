@@ -86,7 +86,7 @@ Output ONLY the JSON array of objects. Do not include markdown code blocks or ex
 
 def _propose_questions_fireworks(context: ResearchContext, api_key: str, max_questions: int) -> list[QuestionCandidate]:
     url = "https://api.fireworks.ai/inference/v1/chat/completions"
-    model = os.environ.get("FIREWORKS_MODEL", "accounts/fireworks/models/llama-v3p1-70b-instruct")
+    model = os.environ.get("FIREWORKS_MODEL", "accounts/fireworks/models/deepseek-r1-distill-qwen-7b")
 
     system_prompt = """You are an expert investment research assistant generating high-quality follow-up research questions.
 Your goal is to propose specific, material, answerable research questions targeting known evidence gaps.

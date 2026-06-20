@@ -106,7 +106,7 @@ def _submit_fireworks_dpo_job(api_key: str, training_file: str) -> None:
     print(f"[Fireworks AI] Submitting DPO fine-tuning job using training file {training_file}...")
 
     payload = {
-        "model": "accounts/fireworks/models/llama-v3p1-70b-instruct",
+        "model": "accounts/fireworks/models/deepseek-r1-distill-qwen-7b",
         "training_file": training_file,
         "hyperparameters": {
             "n_epochs": 3,
