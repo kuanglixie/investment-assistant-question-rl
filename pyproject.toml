@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "investment-assistant-question-rl"
+version = "0.1.0"
+description = "Offline RL/evaluation harness for teaching InvestmentAssistant to ask better research questions."
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+  { name = "kuangli", email = "xiekuangli@gmail.com" }
+]
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0"
+]
+
+[project.scripts]
+ia-question-rl = "ia_question_rl.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

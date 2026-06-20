@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/investment-assistant-question-rl/episode.schema.json",
+  "title": "InvestmentAssistant Question RL Episode",
+  "type": "object",
+  "required": ["episode_id", "context", "candidates"],
+  "properties": {
+    "episode_id": {
+      "type": "string"
+    },
+    "source_run_dir": {
+      "type": "string"
+    },
+    "context": {
+      "type": "object",
+      "required": ["ticker", "evidence_gaps", "existing_questions"],
+      "properties": {
+        "ticker": { "type": "string" },
+        "company_name": { "type": ["string", "null"] },
+        "thesis": { "type": ["string", "null"] },
+        "source_artifacts": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "metrics": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "existing_questions": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "evidence_gaps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["gap_id", "description"],
+            "properties": {
+              "gap_id": { "type": "string" },
+              "description": { "type": "string" },
+              "severity": { "type": "string" },
+              "source_refs": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["question"],
+        "properties": {
+          "question": { "type": "string" },
+          "intent": { "type": ["string", "null"] },
+          "target_gap_id": { "type": ["string", "null"] },
+          "reward": {
+            "type": ["object", "null"]
+          }
+        }
+      }
+    }
+  }
+}
