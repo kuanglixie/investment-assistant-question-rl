@@ -6,6 +6,9 @@
   "input_data": {
     "ticker": "PDD",
     "thesis": "Assess whether recent growth is durable and cash-generative",
+    "sec_reports_url": "https://github.com/kuanglixie/investment-assistant-core/tree/temporary/pdd-sec-cache-for-teammate/data/raw/sec/0001737806/documents",
+    "source_type": "official_sec_filings",
+    "cik": "0001737806",
     "evidence_gaps": [
       {
         "gap_id": "public-source-foundation-contract-source-inventory-requests-missing",
