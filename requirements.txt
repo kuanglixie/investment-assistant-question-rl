@@ -1,0 +1,2 @@
+eval-protocol>=0.3.31
+pydantic>=2.12.5
