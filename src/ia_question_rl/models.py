@@ -23,6 +23,7 @@ class ResearchContext:
     source_artifacts: tuple[str, ...] = ()
     evidence_gaps: tuple[EvidenceGap, ...] = ()
     existing_questions: tuple[str, ...] = ()
+    target_human_questions: tuple[str, ...] = ()
     metrics: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
@@ -33,6 +34,7 @@ class ResearchContext:
             "source_artifacts": list(self.source_artifacts),
             "evidence_gaps": [gap.to_dict() for gap in self.evidence_gaps],
             "existing_questions": list(self.existing_questions),
+            "target_human_questions": list(self.target_human_questions),
             "metrics": list(self.metrics),
         }
 

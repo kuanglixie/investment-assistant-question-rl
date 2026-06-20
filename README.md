@@ -53,6 +53,7 @@ docs/
   architecture.md
   integration-with-investment-assistant.md
   research-question-rubric.md
+  hackathon-resources.md
 schemas/
   episode.schema.json
 tests/

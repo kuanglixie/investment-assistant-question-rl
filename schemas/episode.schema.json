@@ -30,6 +30,10 @@
           "type": "array",
           "items": { "type": "string" }
         },
+        "target_human_questions": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
         "evidence_gaps": {
           "type": "array",
           "items": {

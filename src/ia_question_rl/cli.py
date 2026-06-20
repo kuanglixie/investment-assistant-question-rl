@@ -22,6 +22,7 @@ def main(argv: list[str] | None = None) -> int:
     score_parser.add_argument("--thesis")
     score_parser.add_argument("--gap", action="append", default=[])
     score_parser.add_argument("--existing-question", action="append", default=[])
+    score_parser.add_argument("--target-human-question", action="append", default=[])
 
     extract_parser = subparsers.add_parser(
         "extract-episode",
@@ -53,6 +54,7 @@ def _score(args: argparse.Namespace) -> int:
             for index, gap in enumerate(args.gap)
         ),
         existing_questions=tuple(args.existing_question),
+        target_human_questions=tuple(getattr(args, "target_human_question", [])),
     )
     reward = evaluate_question(args.question, context)
     print(json.dumps(reward.to_dict(), indent=2, ensure_ascii=False))

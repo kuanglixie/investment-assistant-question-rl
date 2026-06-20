@@ -60,6 +60,7 @@ def evaluate_question(question: str, context: ResearchContext) -> RewardBreakdow
         "answerability": _answerability(normalized),
         "evidence_gap_fit": _evidence_gap_fit(tokens, context),
         "novelty": _novelty(tokens, context.existing_questions),
+        "analyst_alignment": _analyst_alignment(tokens, context.target_human_questions),
         "source_grounding": _source_grounding(normalized),
         "decision_relevance": _decision_relevance(normalized, context),
         "specificity": _specificity(tokens, normalized, context),
@@ -77,6 +78,8 @@ def evaluate_question(question: str, context: ResearchContext) -> RewardBreakdow
         rationale.append("Names evidence or source types.")
     if components["novelty"] <= 0.25:
         rationale.append("Likely duplicates an existing question.")
+    if components["analyst_alignment"] >= 1.25:
+        rationale.append("High alignment with real human analyst questions.")
     if penalties["vagueness"] > 0:
         rationale.append("Too vague for a research workpaper.")
 
@@ -153,6 +156,20 @@ def _novelty(tokens: set[str], existing_questions: Iterable[str]) -> float:
     if max_overlap >= 0.55:
         return 0.35
     return 1.0
+
+
+def _analyst_alignment(tokens: set[str], target_human_questions: Iterable[str]) -> float:
+    targets = list(target_human_questions)
+    if not targets:
+        return 0.0
+    best_overlap = max(_jaccard(tokens, set(_tokens(question))) for question in targets)
+    if best_overlap >= 0.25:
+        return 2.0
+    if best_overlap >= 0.15:
+        return 1.25
+    if best_overlap >= 0.08:
+        return 0.5
+    return 0.0
 
 
 def _source_grounding(text: str) -> float:

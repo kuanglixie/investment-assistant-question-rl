@@ -38,7 +38,7 @@ def context_from_run(
     artifacts = discover_artifacts(run_dir)
     payloads = {name: _load_json(path) for name, path in artifacts.items()}
 
-    existing_questions = _dedupe(_collect_strings_by_key(payloads, {"question", "research_question"}))
+    target_human_questions = _dedupe(_collect_strings_by_key(payloads, {"question", "research_question"}))
     metrics = _dedupe(_collect_strings_by_key(payloads, {"metric", "metric_name", "metric_family"}))
     gaps = _extract_gaps(payloads)
 
@@ -48,7 +48,8 @@ def context_from_run(
         thesis=thesis,
         source_artifacts=tuple(str(path) for path in artifacts.values()),
         evidence_gaps=tuple(gaps),
-        existing_questions=tuple(existing_questions),
+        existing_questions=(),
+        target_human_questions=tuple(target_human_questions),
         metrics=tuple(metrics),
     )
 
