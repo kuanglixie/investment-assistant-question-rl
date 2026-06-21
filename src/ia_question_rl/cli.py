@@ -9,6 +9,11 @@ from ia_question_rl.baseline_policy import propose_questions
 from ia_question_rl.ia_artifacts import context_from_run
 from ia_question_rl.models import EvidenceGap, ResearchContext
 from ia_question_rl.reward import evaluate_question
+from ia_question_rl.transcript_questions import (
+    extract_analyst_questions_from_reader_url,
+    extract_analyst_questions_from_url,
+    write_questions_jsonl,
+)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -35,12 +40,27 @@ def main(argv: list[str] | None = None) -> int:
     extract_parser.add_argument("--output", required=True)
     extract_parser.add_argument("--max-questions", type=int, default=5)
 
+    transcript_parser = subparsers.add_parser(
+        "extract-analyst-questions",
+        help="Extract analyst questions from an earnings-call transcript URL.",
+    )
+    transcript_parser.add_argument("--url", action="append", required=True)
+    transcript_parser.add_argument("--ticker")
+    transcript_parser.add_argument("--output", required=True)
+    transcript_parser.add_argument(
+        "--reader",
+        action="store_true",
+        help="Fetch transcript text through the Jina Reader endpoint before extracting questions.",
+    )
+
     args = parser.parse_args(argv)
 
     if args.command == "score":
         return _score(args)
     if args.command == "extract-episode":
         return _extract_episode(args)
+    if args.command == "extract-analyst-questions":
+        return _extract_analyst_questions(args)
     raise ValueError(f"Unsupported command: {args.command}")
 
 
@@ -86,6 +106,16 @@ def _extract_episode(args: argparse.Namespace) -> int:
     with output.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(episode, ensure_ascii=False) + "\n")
     print(json.dumps({"wrote": str(output), "candidate_count": len(rewarded_candidates)}, indent=2))
+    return 0
+
+
+def _extract_analyst_questions(args: argparse.Namespace) -> int:
+    questions = []
+    for url in args.url:
+        extractor = extract_analyst_questions_from_reader_url if args.reader else extract_analyst_questions_from_url
+        questions.extend(extractor(url, ticker=args.ticker))
+    write_questions_jsonl(questions, args.output)
+    print(json.dumps({"wrote": args.output, "question_count": len(questions)}, indent=2))
     return 0
 
 
