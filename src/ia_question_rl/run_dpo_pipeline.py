@@ -94,16 +94,16 @@ def main(argv: list[str] | None = None) -> int:
     if args.submit_fireworks:
         api_key = os.environ.get("FIREWORKS_API_KEY")
         if not api_key:
-            print("[Fireworks AI Error] FIREWORKS_API_KEY environment variable is required to submit DPO fine-tuning job.")
+            print("[Fireworks AI Error] FIREWORKS_API_KEY environment variable is required to submit GRPO fine-tuning job.")
             return 1
-        _submit_fireworks_dpo_job(api_key, str(dpo_output_path))
+        _submit_fireworks_grpo_job(api_key, str(dpo_output_path))
 
     return 0
 
 
-def _submit_fireworks_dpo_job(api_key: str, training_file: str) -> None:
+def _submit_fireworks_grpo_job(api_key: str, training_file: str) -> None:
     url = "https://api.fireworks.ai/v1/fine_tuning/jobs"
-    print(f"[Fireworks AI] Submitting DPO fine-tuning job using training file {training_file}...")
+    print(f"[Fireworks AI] Submitting GRPO fine-tuning job using training file {training_file}...")
 
     payload = {
         "model": "accounts/fireworks/models/glm-5p2",
@@ -111,10 +111,10 @@ def _submit_fireworks_dpo_job(api_key: str, training_file: str) -> None:
         "hyperparameters": {
             "n_epochs": 3,
             "learning_rate_multiplier": 1.0,
-            "loss_type": "dpo",
-            "beta": 0.1,
+            "loss_type": "grpo",
+            "beta": 0.01,
         },
-        "suffix": "ia-question-rl-pdd-dpo",
+        "suffix": "ia-question-rl-pdd-grpo",
     }
 
     headers = {
