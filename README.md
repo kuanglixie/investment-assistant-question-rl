@@ -1,24 +1,24 @@
 # InvestmentAssistant Question RL
 
-这个 repo 是 `InvestmentAssistant` 的旁路 RL 实验项目：目标不是先改主系统，而是先把“什么是好的 research question”变成可记录、可评分、可训练、可回放的对象。
+This repository is a side-car reinforcement learning (RL) experimental project for `InvestmentAssistant`. Instead of modifying the primary system immediately, the goal is to turn "what makes a good research question" into an object that can be recorded, scored, trained, and replayed.
 
-核心问题：
+Core Question:
 
 > How can InvestmentAssistant ask the right research question at the right time?
 
-这里的 “right” 暂时定义为：
+Here, "right" is currently defined as:
 
-- 对投资判断有 material impact；
-- 能被官方披露、工作底稿、竞品/替代数据或人工 follow-up 回答；
-- 针对真实 evidence gap，而不是泛泛提问；
-- 与已有问题不重复；
-- 能推进 `collect -> workpaper -> reconcile -> judge -> memo` 的下一步。
+- Has a material impact on investment judgments;
+- Can be answered via official disclosures, workpapers, competitor/alternative data, or manual follow-ups;
+- Targets a genuine evidence gap rather than asking generic questions;
+- Does not duplicate existing questions;
+- Drives the next step in the `collect -> workpaper -> reconcile -> judge -> memo` workflow.
 
 ## Why A Separate Repo
 
-主 `InvestmentAssistant` 已经会产出结构化研究产物，例如 `financial_report_pack.json`、`layer1_question_pack.json`、`evidence_communication_pack.json`、`feedback_loop_pack.json` 和最终 research draft。这个 repo 先消费这些产物，训练/评估一个 question policy，再决定哪些能力值得回写主仓库。
+The main `InvestmentAssistant` already outputs structured research artifacts, such as `financial_report_pack.json`, `layer1_question_pack.json`, `evidence_communication_pack.json`, `feedback_loop_pack.json`, and the final research draft. This repository first consumes these artifacts to train and evaluate a question policy before deciding which capabilities are worth merging back into the main repository.
 
-这样可以避免在主 pipeline 里直接堆 agent，也让 RL 实验有清楚的输入、动作、奖励和回放证据。
+This approach avoids cluttering the main pipeline with agents and ensures the RL experiments have clear inputs, actions, rewards, and replayable evidence.
 
 ## First Runnable Loop
 
@@ -30,7 +30,7 @@ PYTHONPATH=src python3 -m ia_question_rl.cli score \
   --question "Which official disclosures or segment proxies can test whether Temu unit economics are improving without relying on management narrative?"
 ```
 
-从 InvestmentAssistant run 目录抽取 context 并生成 baseline candidates：
+Extract context from an InvestmentAssistant run directory and generate baseline candidates:
 
 ```bash
 PYTHONPATH=src python3 -m ia_question_rl.cli extract-episode \
