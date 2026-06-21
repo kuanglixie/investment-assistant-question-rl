@@ -84,5 +84,5 @@ Possible later steps:
 
 - preference dataset from analyst A/B choices;
 - reward model trained on pairwise question comparisons;
-- DPO-style policy tuning;
+- GRPO-style policy tuning;
 - constrained online bandit that only proposes follow-up questions, not conclusions.

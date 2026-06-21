@@ -23,7 +23,7 @@ This document catalogs the available hackathon credits and outlines how each pro
 
 ### 1. Fireworks AI: RL Training & High-Speed Rollouts ($500 Credit)
 Fireworks AI provides both blazing-fast inference and managed fine-tuning services, making it the ideal engine for our RL loop:
-* **RL / DPO Fine-Tuning**: Fireworks supports fine-tuning open-source base models (e.g., GLM 5.2, Llama 3.1) via LoRA. Once our offline evaluation harness generates scored episode datasets matching `episode.schema.json`, we convert them into preference pairs (chosen vs. rejected questions) in `data/dpo_pdd_training_pairs.jsonl`.
+* **RL / GRPO Fine-Tuning**: Fireworks supports fine-tuning open-source base models (e.g., GLM 5.2, Llama 3.1) via LoRA. Once our offline evaluation harness generates scored episode datasets matching `episode.schema.json`, we convert them into preference pairs (chosen vs. rejected questions) in `data/grpo_pdd_training_pairs.jsonl`.
 * **Command-Line Submission (`eval-protocol`)**: For the hackathon environment, fine-tuning jobs are orchestrated using the official `eval-protocol` CLI tool. This bypasses public REST gateways and submits Reinforcement Fine-Tuning (RFT) jobs directly:
   ```bash
   pip install eval-protocol
@@ -31,7 +31,7 @@ Fireworks AI provides both blazing-fast inference and managed fine-tuning servic
   
   eval-protocol create rft \
     --base-model accounts/fireworks/models/glm-5p2 \
-    --dataset data/dpo_pdd_training_pairs.jsonl \
+    --dataset data/grpo_pdd_training_pairs.jsonl \
     --output-model ia-question-rl-glm-5p2-rft
   ```
 * **Massive Candidate Rollouts**: During policy iteration, we query Fireworks at high concurrency to generate batches of question candidates in `baseline_policy.py` at a fraction of the cost and latency of larger proprietary models.

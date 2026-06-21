@@ -13,10 +13,13 @@ from ia_question_rl.reward import evaluate_question
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Run end-to-end DPO data generation and Fireworks AI RL pipeline.")
-    parser.add_argument("--task-file", default="data/episodes/pdd_supervised_dpo_task.json")
-    parser.add_argument("--output-dpo", default="data/dpo_pdd_training_pairs.jsonl")
-    parser.add_argument("--submit-fireworks", action="store_true", help="Submit DPO fine-tuning job to Fireworks AI.")
+    parser = argparse.ArgumentParser(description="Run end-to-end GRPO data generation and Fireworks AI RL pipeline.")
+    parser.add_argument("--task-file", default="data/episodes/pdd_supervised_grpo_task.json", help="Path to task JSON file.")
+    parser.add_argument("--output-grpo", default="data/grpo_pdd_training_pairs.jsonl", help="Output path for GRPO pairs.")
+    parser.add_argument("--ticker", help="Company ticker (overrides task file ticker).")
+    parser.add_argument("--thesis", help="Investment thesis (overrides task file thesis).")
+    parser.add_argument("--suffix", help="Fireworks fine-tuning suffix.")
+    parser.add_argument("--submit-fireworks", action="store_true", help="Submit GRPO fine-tuning job to Fireworks AI.")
     args = parser.parse_args(argv)
 
     task_path = Path(args.task_file)
@@ -43,17 +46,20 @@ def main(argv: list[str] | None = None) -> int:
         print(f"[2/5] Warning: Attachment directory {attachment_dir} not found.")
 
     # Construct ResearchContext for policy generation and reward scoring
+    ticker = args.ticker or task_data.get("ticker", "PDD")
+    thesis = args.thesis or task_data.get("thesis", "Assess whether recent growth is durable and cash-generative")
+    raw_gaps = task_data.get("evidence_gaps", [
+        {"gap_id": "temu_growth", "description": "Temu standalone economics are not disclosed separately."},
+        {"gap_id": "margin_fluctuation", "description": "Fluctuation in cost-to-profit ratio and gross margin pressure."},
+        {"gap_id": "first_party_brand", "description": "RMB 100 billion investment plan for first-party brand initiative."},
+    ])
+    evidence_gaps = tuple(EvidenceGap(gap_id=g["gap_id"], description=g["description"]) for g in raw_gaps)
+
     context = ResearchContext(
-        ticker="PDD",
-        thesis="Assess whether recent growth is durable and cash-generative",
+        ticker=ticker,
+        thesis=thesis,
         target_human_questions=tuple(gold_questions),
-        evidence_gaps=tuple(
-            [
-                EvidenceGap(gap_id="temu_growth", description="Temu standalone economics are not disclosed separately."),
-                EvidenceGap(gap_id="margin_fluctuation", description="Fluctuation in cost-to-profit ratio and gross margin pressure."),
-                EvidenceGap(gap_id="first_party_brand", description="RMB 100 billion investment plan for first-party brand initiative."),
-            ]
-        ),
+        evidence_gaps=evidence_gaps,
     )
 
     print("[3/5] Generating policy rollouts via configured AI provider (Fireworks / Jetski / Baseline)...")
@@ -67,15 +73,15 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"[4/5] Evaluated {len(scored_candidates)} candidate rollouts against gold_questions ground truth.")
 
-    # Construct DPO Preference Pairs
-    dpo_output_path = Path(args.output_dpo)
-    dpo_output_path.parent.mkdir(parents=True, exist_ok=True)
+    # Construct GRPO Preference Pairs
+    grpo_output_path = Path(args.output_grpo)
+    grpo_output_path.parent.mkdir(parents=True, exist_ok=True)
 
     pairs = []
-    with dpo_output_path.open("w", encoding="utf-8") as handle:
+    with grpo_output_path.open("w", encoding="utf-8") as handle:
         for index, gold_q in enumerate(gold_questions):
             rejected_q = scored_candidates[index % len(scored_candidates)][0] if scored_candidates else "What is going on with the company?"
-            dpo_pair = {
+            grpo_pair = {
                 "messages": [
                     {"role": "system", "content": task_prompt},
                     {
@@ -86,22 +92,23 @@ def main(argv: list[str] | None = None) -> int:
                 "chosen": {"role": "assistant", "content": gold_q},
                 "rejected": {"role": "assistant", "content": rejected_q},
             }
-            handle.write(json.dumps(dpo_pair, ensure_ascii=False) + "\n")
-            pairs.append(dpo_pair)
+            handle.write(json.dumps(grpo_pair, ensure_ascii=False) + "\n")
+            pairs.append(grpo_pair)
 
-    print(f"[5/5] Successfully generated {len(pairs)} DPO preference pairs. Wrote to {dpo_output_path}.")
+    print(f"[5/5] Successfully generated {len(pairs)} GRPO preference pairs. Wrote to {grpo_output_path}.")
 
     if args.submit_fireworks:
         api_key = os.environ.get("FIREWORKS_API_KEY")
         if not api_key:
             print("[Fireworks AI Error] FIREWORKS_API_KEY environment variable is required to submit GRPO fine-tuning job.")
             return 1
-        _submit_fireworks_grpo_job(api_key, str(dpo_output_path))
+        suffix = args.suffix or task_data.get("suffix", f"ia-question-rl-{ticker.lower()}-grpo")
+        _submit_fireworks_grpo_job(api_key, str(grpo_output_path), suffix)
 
     return 0
 
 
-def _submit_fireworks_grpo_job(api_key: str, training_file: str) -> None:
+def _submit_fireworks_grpo_job(api_key: str, training_file: str, suffix: str) -> None:
     url = "https://api.fireworks.ai/v1/fine_tuning/jobs"
     print(f"[Fireworks AI] Submitting GRPO fine-tuning job using training file {training_file}...")
 
@@ -114,7 +121,7 @@ def _submit_fireworks_grpo_job(api_key: str, training_file: str) -> None:
             "loss_type": "grpo",
             "beta": 0.01,
         },
-        "suffix": "ia-question-rl-pdd-grpo",
+        "suffix": suffix,
     }
 
     headers = {

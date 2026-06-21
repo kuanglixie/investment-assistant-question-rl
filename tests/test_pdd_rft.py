@@ -4,14 +4,15 @@ from pathlib import Path
 
 import litellm
 from eval_protocol import EvaluationRow, evaluation_test
+from eval_protocol.models import EvaluateResult
 
 
-@evaluation_test(input_dataset=["data/dpo_pdd_training_pairs.jsonl"])
+@evaluation_test(input_dataset=["data/grpo_pdd_training_pairs.jsonl"])
 def test_pdd_question_generation(row: EvaluationRow) -> EvaluationRow:
-    """Run Reinforcement Fine-Tuning (DPO/GRPO) on GLM 5.2 using LLM-as-a-Judge with golden answer grounding."""
-    task_file = Path("data/episodes/pdd_supervised_dpo_task.json")
+    """Run Reinforcement Fine-Tuning (GRPO) on GLM 5.2 using LLM-as-a-Judge with golden answer grounding."""
+    task_file = Path("data/episodes/pdd_supervised_grpo_task.json")
     if not task_file.exists():
-        row.evaluation_result = 0.0
+        row.evaluation_result = EvaluateResult(score=0.0)
         return row
 
     with task_file.open("r", encoding="utf-8") as f:
@@ -19,13 +20,13 @@ def test_pdd_question_generation(row: EvaluationRow) -> EvaluationRow:
     gold_questions = task_data.get("gold_questions", [])
 
     if not gold_questions or not row.messages:
-        row.evaluation_result = 0.0
+        row.evaluation_result = EvaluateResult(score=0.0)
         return row
 
     # Extract model generated content from the final assistant message
     generated_content = row.messages[-1].content or ""
     if not generated_content:
-        row.evaluation_result = 0.0
+        row.evaluation_result = EvaluateResult(score=0.0)
         return row
 
     # Construct LLM-as-a-Judge Prompt grounding evaluation in the golden answers
@@ -51,13 +52,13 @@ def test_pdd_question_generation(row: EvaluationRow) -> EvaluationRow:
         judge_content = response.choices[0].message.content or ""
         score_match = re.search(r"<score>([\d.]+)</score>", judge_content)
         if score_match:
-            row.evaluation_result = float(score_match.group(1))
+            row.evaluation_result = EvaluateResult(score=float(score_match.group(1)))
         else:
             # Fallback regex if tags were omitted
             nums = re.findall(r"(0\.\d+|1\.0|0\.0)", judge_content)
-            row.evaluation_result = float(nums[-1]) if nums else 0.5
+            row.evaluation_result = EvaluateResult(score=float(nums[-1]) if nums else 0.5)
     except Exception as e:
         print(f"[LLM-as-a-Judge Error] Failed to evaluate rollout: {e}")
-        row.evaluation_result = 0.0
+        row.evaluation_result = EvaluateResult(score=0.0)
 
     return row

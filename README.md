@@ -66,4 +66,4 @@ tests/
 - Reward: materiality, answerability, evidence-gap fit, novelty, source grounding, and decision relevance, minus vagueness/redundancy penalties.
 - Episode: one InvestmentAssistant research state or report pack snapshot, plus generated candidates and reward feedback.
 
-The first milestone is not PPO. The first milestone is a reliable offline evaluation harness. Once the reward rubric agrees with human review on enough examples, the repo can support preference modeling, DPO/RLAIF-style ranking, or online policy iteration.
+The first milestone is not PPO. The first milestone is a reliable offline evaluation harness. Once the reward rubric agrees with human review on enough examples, the repo can support preference modeling, GRPO/RLAIF-style ranking, or online policy iteration.
