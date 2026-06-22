@@ -1,7 +1,7 @@
 # Group Relative Policy Optimization (GRPO) & Tool-Use Alignment Report
 
 > [!NOTE]
-> This report details the theoretical innovations, architectural implementation, dataset design, model selection rationale, comprehensive cost breakdown, and empirical results of fine-tuning `Qwen2.5-3B-Instruct` using GRPO with dynamic tool execution on the Modal cloud platform.
+> This report details the theoretical innovations, architectural implementation, comprehensive dataset preparation pipeline, model selection rationale, exact cost breakdown, and empirical results of fine-tuning `Qwen2.5-3B-Instruct` using GRPO with dynamic tool execution on the Modal cloud platform.
 
 ---
 
@@ -26,9 +26,9 @@ graph LR
 
 ---
 
-## 2. Dataset Design & Optimization Schedule
+## 2. Dataset Preparation & Optimization Schedule
 
-To ensure verifiable policy generalization and prevent data contamination, we established a rigorous dataset split using `prepare_grpo_dataset.py`, sourcing raw SEC filings and golden analyst targets from `/data/rl_observations`.
+To ensure verifiable policy generalization and prevent data contamination, we established a rigorous dataset preparation pipeline using [prepare_grpo_dataset.py](file:///Users/ajing/Documents/finance_rl/investment-assistant-question-rl/src/ia_question_rl/prepare_grpo_dataset.py), sourcing raw SEC filings and golden analyst targets from `/data/rl_observations`.
 
 ```mermaid
 pie title Dataset Split (79 Total Corporate Prompts)
@@ -36,11 +36,24 @@ pie title Dataset Split (79 Total Corporate Prompts)
     "Evaluation Prompts (15)" : 15
 ```
 
-### 2.1. Train vs. Evaluation Split
+### 2.1. Raw Data Ingestion & Structure
+The raw observations directory (`/Users/ajing/Downloads/rl_observations`, mounted inside Modal at `/data/rl_observations`) is structured by corporate ticker symbols (e.g., `BAX`, `CBRE`, `ADM`). Within each ticker directory, the pipeline extracts data from three dedicated subdirectories:
+1. `observation/raw_reports/`: Raw SEC filings (10-K, 10-Q, 20-F, annual reports) in PDF format.
+2. `observation/evidence/`: Ground-truth evidence clippings and financial footnotes.
+3. `observation/question/`: Golden analyst questions formulated by professional institutional researchers.
+
+### 2.2. Prompt Engineering & Tool Structure Injection
+For each company, [prepare_grpo_dataset.py](file:///Users/ajing/Documents/finance_rl/investment-assistant-question-rl/src/ia_question_rl/prepare_grpo_dataset.py) constructs a highly structured instruction prompt instructing the model to act as an expert investment analyst identifying evidence gaps. Crucially, the prompt injects explicit definitions of available tools (e.g., `read_sec_document`) and defines the exact `<tool_call>` / `<tool_response>` multi-turn interaction protocol required for HUD environment rollouts.
+
+### 2.3. Golden Target Attachment for LLM-as-a-Judge
+To enable `LLMJudgeGrader` to evaluate candidate rollouts without exposing ground-truth answers to the model during generation, the pipeline parses the golden analyst questions from `observation/question/` and embeds them into a dedicated, isolated metadata field (`golden_questions`) within each prompt dictionary object. During the training rollout loop, `hud_judge_reward_func` extracts `golden_questions` and sends them alongside the model's generated questions to Fireworks AI (`glm-5p2`) for dense semantic comparison.
+
+### 2.4. Formatting for HuggingFace TRL `GRPOTrainer`
+The final parsed dictionary objects are serialized into JSONL files (`/root/grpo_train_prompts.jsonl` and `/root/grpo_test_prompts.jsonl`) inside the Modal container. These files are loaded directly into HuggingFace `datasets.Dataset` objects, perfectly matching the expected schema for TRL's `GRPOTrainer.train()` and `evaluate_pre_and_post`.
+
+### 2.5. Train vs. Evaluation Split & Schedule
 - **Training Dataset**: **64 unique corporate prompts** covering distinct market tickers and financial domains.
 - **Evaluation Dataset**: **15 unique corporate prompts** featuring entirely unseen companies (e.g., `ADM`, `CASY`, `AZO`, `CBRE`, `BAX`, `AXON`, `BKR`, `CF`, `AMT`, `CAH`).
-
-### 2.2. Training Schedule & Candidate Groups
 - **Candidate Group Size ($G$)**: **8 parallel rollouts per prompt** (`num_generations = 8`).
 - **Number of Epochs**: Exactly **3 full training epochs**.
 - **Total Training Rollouts Executed**: `64 prompts × 8 rollouts × 3 epochs` = **1,536 total optimization steps**.
