@@ -44,14 +44,47 @@ _MCP_SERVER_TASK: asyncio.Task[None] | None = None
 
 
 async def read_sec_document(target_path: str, max_chars: int = 4000) -> str:
-    """Read the contents of a local SEC filing document or InvestmentAssistant artifact.
+    """Read the contents of a local SEC filing document (text, HTML, or PDF) or InvestmentAssistant artifact.
 
     Accepts absolute paths (e.g., from source_artifacts) or relative paths within the project cache (e.g. data/raw/sec/...).
     """
+    def _read_file_content(file_path: str, max_c: int) -> str:
+        if file_path.lower().endswith(".pdf"):
+            try:
+                import pypdf
+                reader = pypdf.PdfReader(file_path)
+                text_parts = []
+                for page in reader.pages:
+                    text_parts.append(page.extract_text() or "")
+                    if sum(len(p) for p in text_parts) >= max_c:
+                        break
+                content = "\n".join(text_parts)[:max_c]
+                return content or "PDF File is empty"
+            except Exception as e:
+                return f"Error reading PDF file {file_path}: {e}"
+        else:
+            try:
+                with open(file_path, encoding="utf-8", errors="replace") as f:
+                    content = f.read(max_c)
+                    return content or "File is empty"
+            except Exception as e:
+                return f"Error reading file {file_path}: {e}"
+
     if not os.path.isabs(target_path):
         target_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", target_path))
     
     if not os.path.exists(target_path):
+        # Fallback check across /data/rl_observations for robust matching during GRPO rollouts
+        base_obs = "/data/rl_observations"
+        if os.path.exists(base_obs):
+            for root, dirs, files in os.walk(base_obs):
+                for name in list(dirs) + list(files):
+                    if name == os.path.basename(target_path) or os.path.join(root, name).endswith(target_path.lstrip("/")):
+                        matched = os.path.join(root, name)
+                        if os.path.isdir(matched):
+                            return f"Target is a directory. Available files: {os.listdir(matched)}"
+                        return _read_file_content(matched, max_chars)
+
         parent = os.path.dirname(target_path)
         if os.path.exists(parent) and os.path.isdir(parent):
             files = os.listdir(parent)
@@ -62,12 +95,7 @@ async def read_sec_document(target_path: str, max_chars: int = 4000) -> str:
         files = os.listdir(target_path)
         return f"Target is a directory. Available files: {files}"
     
-    try:
-        with open(target_path, encoding="utf-8", errors="replace") as f:
-            content = f.read(max_chars)
-            return content or "File is empty"
-    except Exception as e:
-        return f"Error reading file {target_path}: {e}"
+    return _read_file_content(target_path, max_chars)
 
 
 # ── Sixtyfour: deep research on people and companies ──────────────────────────
